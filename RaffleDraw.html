@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Raffle Draw</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<style type="text/css">
+		html, 
+		body {
+		    height: 100%;
+		}
+
+		.blink_me {
+		  animation: blinker 1.3s linear infinite;
+		}
+
+		@keyframes blinker {  
+		  50% { opacity: 0; }
+		}
+	</style>
+</head>
+<body>
+	<div class="container" style="margin-top: 25px; height: 100%;">
+		<h1>Raffle Draw</h1>
+		<div class="row" style="height: 100%;">
+			<div class="col-md-12" id="app" style="height: 100%;">
+				<form action="" class="form-inline"><input type="hidden" name="wsid" value="787f1c9aac77ee3a38008ee1f5d4c1f7301f953e" />
+					<div class="form-group">
+						<label for="">Number of persons</label>
+						<input type="number" id="number-of-persons" v-model="number_of_persons" class="form-control">
+					</div>
+				</form>
+				<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true" v-if="all_numbers.length > 0" style="margin-top: 10px;">
+					<div class="panel panel-default">
+						<div class="panel-heading" role="tab">
+							<a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">Exclude numbers</a>
+						</div>
+						<div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+							<div class="panel-body">
+								<button class="btn btn-default" :id="'ex-btn-' + n" v-for="n in all_numbers" style="margin-right: 3px; margin-bottom: 3px;" v-on:click="excludeOrIncludeNumber(n)">{{ n }}</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="panel panel-default text-center" v-if="all_numbers.length > 0" style="width: 100%; min-height: 60%;">
+					<div class="col-md-6 col-md-offset-3" v-if="!shuffling && !is_number_picked" style="margin-top: 200px; margin-bottom: 50px;">
+						<button class="btn btn-info btn-lg btn-block" v-on:click="pickNumber()">Pick a Number</button>
+					</div>
+					<div v-if="!shuffling && is_number_picked" class="col-md-6 col-md-offset-3 text-center">
+						<span style="font-size: 200px;">{{ selected_number }}</span>
+						<button class="btn btn-info btn-block btn-lg" style="margin-bottom: 50px;" v-on:click="pickNumber()">Pick a Number</button>
+					</div>
+					<div v-if="shuffling" style="margin-top: 50px;">
+						<h1 class="blink_me">Please wait...</h1>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+<script
+	src="https://code.jquery.com/jquery-2.2.4.min.js"
+	integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+	crossorigin="anonymous"></script>	
+<script 
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+	crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.13/vue.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chance/1.0.12/chance.min.js"></script>
+<script>
+	Array.prototype.diff = function (a) {
+	    return this.filter(function (i) {
+	        return a.indexOf(i) === -1;
+	    });
+	};
+
+	var app = new Vue({
+		el: "#app",
+		data: {
+			number_of_persons: 0,
+			all_numbers: [],
+			excluded_numbers: [],
+			shuffling: false,
+			selected_number: null,
+			is_number_picked: false
+		},
+		methods: {
+			excludeOrIncludeNumber: (number) => {
+				if (!app.excluded_numbers.includes(number)) {
+					app.excluded_numbers.push(number);
+					$('#ex-btn-' + number).prop('class', 'btn btn-danger');
+				}
+				else {
+					var index = app.excluded_numbers.indexOf(number);
+					app.excluded_numbers.splice(index, 1);
+					$('#ex-btn-' + number).prop('class', 'btn btn-default');
+				}
+			},
+			pickNumber: () => {
+				var diff = app.all_numbers.diff(app.excluded_numbers);
+				if (diff.length > 0) {
+					app.is_number_picked = false;
+					app.shuffling = true;
+					var number = chance.integer({
+						min: Math.min.apply(null, diff),
+						max: Math.max.apply(null, diff)
+					});
+					setTimeout(() => {
+						app.selected_number = number;
+						app.excluded_numbers.push(app.selected_number);
+						$('#ex-btn-' + number).prop('class', 'btn btn-danger');
+						app.shuffling = false;
+						app.is_number_picked = true;					
+					}, 5000);
+				} else {
+					alert('Sorry, All available numbers are excluded or picked');
+				}
+			}
+		},
+		watch: {
+			number_of_persons: (newVal, oldVal) => {
+				app.excluded_numbers = [];
+				app.all_numbers = []; 
+				if (newVal > 0) {
+					for (var i = 1; i <= newVal; i++) {
+						app.all_numbers.push(i);
+					}
+				}
+			}
+		}
+	});
+</script>
+</body>
+</html>
